@@ -352,27 +352,6 @@ WEB_PORT=8001  # or any available port
 - Check file size (max 10MB by default)
 - Verify file format is supported (jpg, png, gif, etc.)
 
-#### 5. Database management
-```bash
-# Access database directly
-docker-compose exec web sqlite3 data/app.db
-
-# Query jobs table
-docker-compose exec web sqlite3 data/app.db "SELECT COUNT(*) FROM jobs;"
-
-# View all jobs
-docker-compose exec web sqlite3 data/app.db "SELECT id, status, created_at FROM jobs;"
-```
-
-### Manual Testing
-
-Run the comprehensive sanity test script:
-```bash
-./test_sanity.sh
-```
-
-This script will test all endpoints and provide a detailed report.
-
 ## Configuration
 
 ### Environment Variables
