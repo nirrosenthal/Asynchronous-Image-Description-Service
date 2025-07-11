@@ -226,21 +226,9 @@ pytest tests/unit/test_tasks.py -v
 | `TASK_RETRY_DELAY` | Delay between retries in seconds | `60` |
 
 ## Docker Services
-
-### Production Profile (`--profile production`)
 - **web**: FastAPI application
 - **worker**: Celery worker for background tasks
-- **beat**: Celery beat for scheduled tasks
 - **redis**: Redis message broker and result backend
-
-### Development Profile (`--profile development`)
-- **web-dev**: FastAPI with hot reload
-- **worker-dev**: Celery worker
-- **redis**: Redis for development
-
-### Test Profile (`--profile test`)
-- **test**: Test runner
-- **redis-test**: Redis for testing (separate port)
 
 ## Project Structure
 
