@@ -59,11 +59,13 @@ def test_submit_job_success(client: TestClient, mock_job_manager: AsyncMock, moc
     # Mock file saving
     mock_image_processor.save_uploaded_file.return_value = "test_image.jpg"
     
-    # Test file upload
-    response = client.post(
-        "/api/v1/submit",
-        files={"file": ("test.jpg", b"fake image content", "image/jpeg")}
-    )
+    # Mock Celery task
+    with patch('app.api.routes.jobs.process_image_task') as mock_task:
+        # Test file upload
+        response = client.post(
+            "/api/v1/submit",
+            files={"file": ("test.jpg", b"fake image content", "image/jpeg")}
+        )
     
     # Assertions
     assert response.status_code == 200

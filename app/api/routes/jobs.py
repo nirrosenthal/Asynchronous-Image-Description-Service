@@ -4,6 +4,7 @@ from app.services.job_manager import JobManager
 from app.services.image_processor import ImageProcessor
 from app.validators import JobSubmitResponse, JobStatusResponse, JobResultResponse
 from app.enums import JobStatus
+from app.tasks import process_image_task
 from app.config import settings
 
 router = APIRouter()
@@ -31,6 +32,9 @@ async def submit_job(
     
     # Save uploaded file
     await image_processor.save_uploaded_file(file_content, job.image_path)
+    
+    # Queue processing task
+    process_image_task.delay(job.id, job.image_path)
     
     return JobSubmitResponse(
         job_id=job.id,
