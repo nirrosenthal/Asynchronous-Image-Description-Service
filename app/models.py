@@ -17,6 +17,7 @@ class Job(Base):
     id: str = Column(String(36), primary_key=True, default=generate_uuid)
     status: JobStatus = Column(SQLEnum(JobStatus), nullable=False, default=JobStatus.QUEUED)
     image_path: str = Column(String(500), nullable=False)
+    file_extension: str = Column(String(10), nullable=False)
     image_description: str = Column(Text, nullable=True)
     generated_by: str = Column(String(100), nullable=False, default="vision-node-gpt")
     created_at = Column(DateTime(timezone=True), server_default=func.now())

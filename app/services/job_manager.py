@@ -14,15 +14,15 @@ class JobManager:
         """Initialize JobManager with a database session."""
         self.db_session = db_session
     
-    async def create_job(self, original_filename: str) -> Job:
+    async def create_job(self, original_filename: str, file_extension: str) -> Job:
         """Create a new job record with UUID-based filename."""
         job_uuid = str(uuid.uuid4())
-        file_extension = os.path.splitext(original_filename)[1]
         image_filename = f"{job_uuid}{file_extension}"
         
         job = Job(
             id=job_uuid,
             image_path=image_filename,
+            file_extension=file_extension,
             status=JobStatus.QUEUED,
             generated_by="vision-node-gpt"
         )
