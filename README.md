@@ -393,13 +393,11 @@ This script will test all endpoints and provide a detailed report.
 
 ## Docker Services
 
-The service runs all components together without profiles:
+All services are configured to work together seamlessly with environment-driven configuration.
 
-- **web**: FastAPI application with hot reload
+- **web**: FastAPI application
 - **worker**: Celery worker for background tasks
 - **redis**: Redis message broker and result backend
-
-All services are configured to work together seamlessly with environment-driven configuration.
 
 ## Project Structure
 
