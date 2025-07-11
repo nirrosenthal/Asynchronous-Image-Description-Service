@@ -4,7 +4,7 @@ A FastAPI-based service that processes images asynchronously using Celery and Re
 
 ## Features
 
-- **Asynchronous Image Processing**: Upload images and get descriptions asynchronously
+- **Asynchronous Image Processing**: Upload images and get descriptions (mocked) asynchronously
 - **RESTful API**: Clean REST API with proper validation and error handling
 - **Celery Integration**: Background task processing with Redis as message broker
 - **SQLite Database**: Lightweight database for job tracking
@@ -33,7 +33,7 @@ A FastAPI-based service that processes images asynchronously using Celery and Re
 - Docker
 - Docker Compose
 
-### Production Deployment
+### Setup and Run
 
 1. **Clone the repository**
    ```bash
@@ -44,14 +44,18 @@ A FastAPI-based service that processes images asynchronously using Celery and Re
 2. **Set up environment variables**
    ```bash
    cp env.example .env
-   # Edit .env with your production values:
-   # - Uncomment Docker Redis URLs and comment local ones
-   # - Adjust CELERY_WORKERS as needed
+   # Edit .env with your configuration:
+   # - Set WEB_HOST=0.0.0.0
+   # - Set WEB_PORT=8000 (or your preferred port)
+   # - Set REDIS_HOST=localhost
+   # - Set REDIS_PORT=6379
+   # - Set CELERY_BROKER_URL=redis://redis:${REDIS_PORT}
+   # - Set CELERY_RESULT_BACKEND=redis://redis:${REDIS_PORT}
    ```
 
-3. **Start the services**
+3. **Start all services**
    ```bash
-   docker-compose --profile production up -d
+   docker-compose up -d
    ```
 
 4. **Check service status**
@@ -63,20 +67,26 @@ A FastAPI-based service that processes images asynchronously using Celery and Re
    ```bash
    docker-compose logs -f web
    docker-compose logs -f worker
+   docker-compose logs -f redis
    ```
 
+6. **Access the API**
+   - **API Documentation**: http://localhost:8000/docs
+   - **Health Check**: http://localhost:8000/health
+
 ### Development Environment
+
+The service now runs without profiles. All services start together:
 
 1. **Set up environment variables**
    ```bash
    cp env.example .env
-   # Edit .env with your development values:
-   # - Uncomment Docker Redis URLs and comment local ones
+   # Edit .env with your configuration values
    ```
 
-2. **Start development services**
+2. **Start all services**
    ```bash
-   docker-compose --profile development up -d
+   docker-compose up -d
    ```
 
 3. **The API will be available at**: http://localhost:8000
@@ -88,124 +98,280 @@ A FastAPI-based service that processes images asynchronously using Celery and Re
 1. **Set up environment variables**
    ```bash
    cp env.example .env
-   # Edit .env with your test values:
-   # - Set DATABASE_URL=sqlite+aiosqlite:///./data/test.db
-   # - Uncomment test Redis URLs and comment others
+   # Edit .env with your configuration values
    ```
 
-2. **Run tests**
+2. **Run tests locally**
    ```bash
-   docker-compose --profile test up --abort-on-container-exit
+   # Install test dependencies
+   pip install pytest pytest-asyncio pytest-mock
+
+   # Run all tests
+   pytest
+
+   # Run with verbose output
+   pytest -v
+
+   # Run specific test file
+   pytest tests/unit/test_tasks.py -v
    ```
 
-## API Endpoints
+## API Usage Examples
 
-### Submit Image for Processing
-```http
-POST /api/v1/submit
-Content-Type: multipart/form-data
+### Using curl
 
-file: <image_file>
+#### 1. Submit an Image for Processing
+
+**Linux/macOS:**
+```bash
+curl -X POST "http://localhost:8000/api/v1/submit" \
+  -H "accept: application/json" \
+  -H "Content-Type: multipart/form-data" \
+  -F "file=@/path/to/your/image.jpg"
+```
+
+**Windows Command Prompt:**
+```cmd
+curl -X POST "http://localhost:8000/api/v1/submit" ^
+  -H "accept: application/json" ^
+  -H "Content-Type: multipart/form-data" ^
+  -F "file=@C:\path\to\your\image.jpg"
+```
+
+**Windows PowerShell:**
+```powershell
+curl -X POST "http://localhost:8000/api/v1/submit" `
+  -H "accept: application/json" `
+  -H "Content-Type: multipart/form-data" `
+  -F "file=@C:\path\to\your\image.jpg"
 ```
 
 **Response:**
 ```json
 {
-  "job_id": "uuid-string",
+  "job_id": "0b66c4f6-f2c7-42d5-9c1b-c01a50c98118",
   "status": "queued",
   "message": "Job submitted successfully"
 }
 ```
 
-### Get Job Status
-```http
-GET /api/v1/status/{job_id}
+#### 2. Check Job Status
+
+```bash
+curl -X GET "http://localhost:8000/api/v1/status/8006955a-8b34-4afd-9487-84490fc25803"
 ```
 
 **Response:**
 ```json
 {
-  "job_id": "uuid-string",
-  "status": "processing",
-  "created_at": "2023-01-01T00:00:00"
+  "job_id": "8006955a-8b34-4afd-9487-84490fc25803",
+  "status": "done",
+  "created_at": "2025-07-11T22:56:10"
 }
 ```
 
-### Get Job Result
-```http
-GET /api/v1/result/{job_id}
+#### 3. Get Job Result
+
+```bash
+curl -X GET "http://localhost:8000/api/v1/result/8006955a-8b34-4afd-9487-84490fc25803"
 ```
 
 **Response:**
 ```json
 {
-  "job_id": "uuid-string",
+  "job_id": "8006955a-8b34-4afd-9487-84490fc25803",
   "status": "done",
   "image_description": "A beautiful landscape with mountains and trees",
   "generated_by": "vision-node-gpt",
-  "created_at": "2023-01-01T00:00:00",
-  "completed_at": "2023-01-01T00:02:00"
+  "created_at": "2025-07-11T22:56:10",
+  "completed_at": "2025-07-11T22:56:12"
 }
 ```
 
-## Local Development
+#### 4. Health Check
+
+```bash
+curl -X GET "http://localhost:8000/health"
+```
+
+**Response:**
+```json
+{
+  "status": "healthy"
+}
+```
+
+#### 5. Test Error Handling
+
+```bash
+# Test with invalid job ID
+curl -w "HTTP Status: %{http_code}\n" "http://localhost:8000/api/v1/status/invalid-id"
+```
+
+**Response:**
+```
+HTTP Status: 404
+```
+
+### Using Python
+
+```python
+import requests
+
+# Submit image
+with open('/path/to/your/image.jpg', 'rb') as f:
+    response = requests.post(
+        'http://localhost:8000/api/v1/submit',
+        files={'file': f}
+    )
+    job_data = response.json()
+    job_id = job_data['job_id']
+    print(f"Job submitted: {job_id}")
+
+# Check status
+status_response = requests.get(f'http://localhost:8000/api/v1/status/{job_id}')
+print(f"Status: {status_response.json()}")
+
+# Get result
+result_response = requests.get(f'http://localhost:8000/api/v1/result/{job_id}')
+print(f"Result: {result_response.json()}")
+```
+
+### Using the Swagger UI
+
+1. Open your browser and navigate to: `http://localhost:8000/docs`
+2. Click on the **POST /api/v1/submit** endpoint
+3. Click "Try it out"
+4. Upload your image file
+5. Click "Execute"
+
+## API Endpoints Reference
+
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| `POST` | `/api/v1/submit` | Submit image for processing |
+| `GET` | `/api/v1/status/{job_id}` | Get job status |
+| `GET` | `/api/v1/result/{job_id}` | Get job result |
+| `GET` | `/health` | Health check |
+| `GET` | `/docs` | API documentation (Swagger UI) |
+| `GET` | `/redoc` | API documentation (ReDoc) |
+
+## Development with Docker Compose
 
 ### Prerequisites
 
-- Python 3.10+
-- Redis
+- Docker
+- Docker Compose
 
-### Setup
+### Setup and Development
 
-1. **Create virtual environment**
-   ```bash
-   python -m venv .venv
-   source .venv/bin/activate  # On Windows: .venv\Scripts\activate
-   ```
-
-2. **Install dependencies**
-   ```bash
-   pip install -r requirements.txt
-   ```
-
-3. **Set up environment variables**
+1. **Set up environment variables**
    ```bash
    cp env.example .env
-   # Edit .env with your configuration
+   # Edit .env with your configuration values
    ```
 
-4. **Initialize database**
+2. **Start all services**
    ```bash
-   python -c "from app.database import init_db; import asyncio; asyncio.run(init_db())"
+   docker-compose up -d
    ```
 
-5. **Start Redis**
+3. **View logs for development**
    ```bash
-   docker run -d -p 6379:6379 redis:7-alpine
+   # View all logs
+   docker-compose logs -f
+
+   # View specific service logs
+   docker-compose logs -f web
+   docker-compose logs -f worker
+   docker-compose logs -f redis
    ```
 
-6. **Start Celery worker**
+4. **Restart services after code changes**
    ```bash
-   celery -A app.tasks worker --loglevel=info
+   # Restart specific service
+   docker-compose restart web
+
+   # Restart all services
+   docker-compose restart
    ```
 
-7. **Start the application**
+5. **Rebuild after dependency changes**
    ```bash
-   uvicorn app.main:app --reload
+   docker-compose down
+   docker-compose build --no-cache
+   docker-compose up -d
    ```
 
-### Running Tests
+### Running Tests with Docker
 
 ```bash
-# Run all tests
-pytest
+# Run tests in a temporary container
+docker-compose run --rm web pytest
 
-# Run with coverage
-pytest --cov=app
+# Run tests with verbose output
+docker-compose run --rm web pytest -v
 
 # Run specific test file
-pytest tests/unit/test_tasks.py -v
+docker-compose run --rm web pytest tests/unit/test_tasks.py -v
+
+# Run tests with coverage
+docker-compose run --rm web pytest --cov=app
 ```
+
+## Troubleshooting
+
+### Common Issues
+
+#### 1. Services not starting
+```bash
+# Check service status
+docker-compose ps
+
+# View logs for specific service
+docker-compose logs web
+docker-compose logs worker
+docker-compose logs redis
+```
+
+#### 2. Celery worker connection issues
+Make sure your `.env` file has the correct Redis URLs:
+```bash
+CELERY_BROKER_URL=redis://redis:6379
+CELERY_RESULT_BACKEND=redis://redis:6379
+```
+
+#### 3. Port conflicts
+If you get port binding errors, change the port in your `.env` file:
+```bash
+WEB_PORT=8001  # or any available port
+```
+
+#### 4. File upload issues
+- Ensure the image file exists and is accessible
+- Check file size (max 10MB by default)
+- Verify file format is supported (jpg, png, gif, etc.)
+
+#### 5. Database management
+```bash
+# Access database directly
+docker-compose exec web sqlite3 data/app.db
+
+# Query jobs table
+docker-compose exec web sqlite3 data/app.db "SELECT COUNT(*) FROM jobs;"
+
+# View all jobs
+docker-compose exec web sqlite3 data/app.db "SELECT id, status, created_at FROM jobs;"
+```
+
+### Manual Testing
+
+Run the comprehensive sanity test script:
+```bash
+./test_sanity.sh
+```
+
+This script will test all endpoints and provide a detailed report.
 
 ## Configuration
 
@@ -227,20 +393,13 @@ pytest tests/unit/test_tasks.py -v
 
 ## Docker Services
 
-### Production Profile (`--profile production`)
-- **web**: FastAPI application
+The service runs all components together without profiles:
+
+- **web**: FastAPI application with hot reload
 - **worker**: Celery worker for background tasks
-- **beat**: Celery beat for scheduled tasks
 - **redis**: Redis message broker and result backend
 
-### Development Profile (`--profile development`)
-- **web-dev**: FastAPI with hot reload
-- **worker-dev**: Celery worker
-- **redis**: Redis for development
-
-### Test Profile (`--profile test`)
-- **test**: Test runner
-- **redis-test**: Redis for testing (separate port)
+All services are configured to work together seamlessly with environment-driven configuration.
 
 ## Project Structure
 

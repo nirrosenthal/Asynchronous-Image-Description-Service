@@ -78,6 +78,10 @@ class ImageProcessor:
         # Mock image processing result
         return "A beautiful landscape with mountains and trees"
     
+    def get_file_extension(self, filename: str) -> str:
+        """Get file extension from filename."""
+        return os.path.splitext(filename.lower())[1]
+    
     async def save_uploaded_file(self, file_content: bytes, filename: str) -> str:
         """Save uploaded file and return the saved path."""
         os.makedirs(self.upload_dir, exist_ok=True)
