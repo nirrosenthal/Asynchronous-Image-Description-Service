@@ -22,10 +22,11 @@ async def submit_job(
     if len(file_content) > settings.MAX_FILE_SIZE:
         raise HTTPException(status_code=400, detail="File too large")
     
-    # Validate image file and get extension
-    file_extension = image_processor.validate_and_get_extension(file, file_content)
+    # Validate uploaded file
+    image_processor.validate_uploaded_file(file, file_content)
     
-    # Create job
+    # Get file extension and create job
+    file_extension = image_processor.get_file_extension(file.filename)
     job = await job_manager.create_job(file.filename, file_extension)
     
     # Save uploaded file

@@ -4,16 +4,32 @@ from app.services.job_manager import JobManager
 from app.enums import JobStatus
 from app.models import Job
 
+@pytest.fixture
+def mock_session():
+    """Create a mocked async database session."""
+    session = MagicMock()
+    session.add = MagicMock()
+    session.commit = AsyncMock()
+    session.refresh = AsyncMock()
+    session.execute = AsyncMock()
+    return session
+
+@pytest.fixture
+def job_manager(mock_session):
+    """Create a JobManager instance with mocked session."""
+    return JobManager(mock_session)
+
 @pytest.mark.asyncio
 async def test_create_job(job_manager, mock_session):
     """Test creating a new job with mocked database."""
     # Act
-    job = await job_manager.create_job("test_image.jpg")
+    job = await job_manager.create_job("test_image.jpg", ".jpg")
     
     # Assert
     assert job.id is not None
     assert job.status == JobStatus.QUEUED
     assert job.image_path.endswith(".jpg")
+    assert job.file_extension == ".jpg"
     assert job.generated_by == "vision-node-gpt"
     assert job.image_path.startswith(job.id)
     
@@ -27,7 +43,7 @@ async def test_get_job_found(job_manager, mock_session):
     """Test retrieving an existing job."""
     # Arrange
     job_id = "test-job-id"
-    expected_job = Job(id=job_id, image_path="test.jpg", status=JobStatus.QUEUED)
+    expected_job = Job(id=job_id, image_path="test.jpg", file_extension=".jpg", status=JobStatus.QUEUED)
     mock_result = MagicMock()
     mock_result.scalar_one_or_none.return_value = expected_job
     mock_session.execute.return_value = mock_result
@@ -60,7 +76,7 @@ async def test_update_job_status_success(job_manager, mock_session):
     """Test updating job status successfully."""
     # Arrange
     job_id = "test-job-id"
-    existing_job = Job(id=job_id, image_path="test.jpg", status=JobStatus.QUEUED)
+    existing_job = Job(id=job_id, image_path="test.jpg", file_extension=".jpg", status=JobStatus.QUEUED)
     mock_result = MagicMock()
     mock_result.scalar_one_or_none.return_value = existing_job
     mock_session.execute.return_value = mock_result
@@ -96,7 +112,7 @@ async def test_update_job_result_success(job_manager, mock_session):
     # Arrange
     job_id = "test-job-id"
     image_description = "A beautiful landscape"
-    existing_job = Job(id=job_id, image_path="test.jpg", status=JobStatus.PROCESSING)
+    existing_job = Job(id=job_id, image_path="test.jpg", file_extension=".jpg", status=JobStatus.PROCESSING)
     mock_result = MagicMock()
     mock_result.scalar_one_or_none.return_value = existing_job
     mock_session.execute.return_value = mock_result

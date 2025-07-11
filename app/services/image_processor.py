@@ -48,13 +48,9 @@ class ImageProcessor:
         except Exception as e:
             return False, f"Error validating file content: {str(e)}"
     
-    def get_file_extension(self, filename: str) -> str:
-        """Extract file extension from filename."""
-        return os.path.splitext(filename.lower())[1]
-    
-    def validate_and_get_extension(self, file: UploadFile, file_content: bytes) -> str:
+    def validate_uploaded_file(self, file: UploadFile, file_content: bytes) -> None:
         """
-        Validate image file and return the file extension.
+        Validate uploaded file for image processing.
         
         Raises:
             HTTPException: If validation fails
@@ -68,9 +64,6 @@ class ImageProcessor:
         is_valid, error_msg = self.validate_image_content(file_content)
         if not is_valid:
             raise HTTPException(status_code=400, detail=error_msg)
-        
-        # Return file extension
-        return self.get_file_extension(file.filename)
     
     async def process_image(self, image_path: str) -> str:
         """Process image and return description."""
