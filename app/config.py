@@ -9,17 +9,20 @@ class Settings(BaseSettings):
         "env_file_encoding": "utf-8"
     }
     
-    # Application Settings
-    ENVIRONMENT: str = "development"
-    DEBUG: bool = True
+    # Port Configuration (for Docker Compose)
+    WEB_PORT: int = 8000
+    REDIS_PORT: int = 6379
+    REDIS_TEST_PORT: int = 6380
     
     # Database Settings
     DATABASE_URL: str = "sqlite+aiosqlite:///./test.db"
     
     # Redis Settings
-    REDIS_URL: str = "redis://localhost:6379"
     CELERY_BROKER_URL: str = "redis://localhost:6379"
     CELERY_RESULT_BACKEND: str = "redis://localhost:6379"
+    
+    # Celery Settings
+    CELERY_WORKERS: int = 1
     
     # File Upload Settings
     MAX_FILE_SIZE: int = 10 * 1024 * 1024  # 10MB
@@ -28,12 +31,6 @@ class Settings(BaseSettings):
     # Task Settings
     TASK_MAX_RETRIES: int = 3
     TASK_RETRY_DELAY: int = 60
-    
-    def __init__(self, **kwargs):
-        # Load test environment file if ENVIRONMENT=test
-        if kwargs.get("ENVIRONMENT") == "test" or os.getenv("ENVIRONMENT") == "test":
-            kwargs["_env_file"] = ".env.test"
-        super().__init__(**kwargs)
 
 # Global settings instance
 settings = Settings() 

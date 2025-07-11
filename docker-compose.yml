@@ -1,0 +1,147 @@
+version: '3.8'
+
+services:
+  # Redis service for all environments
+  redis:
+    image: redis:7-alpine
+    container_name: image-service-redis
+    ports:
+      - "${REDIS_PORT:-6379}:6379"
+    volumes:
+      - redis_data:/data
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    profiles:
+      - production
+      - development
+
+  # Redis service for testing (separate port)
+  redis-test:
+    image: redis:7-alpine
+    container_name: image-service-redis-test
+    ports:
+      - "${REDIS_TEST_PORT:-6380}:6379"
+    command: redis-server --appendonly no
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+    profiles:
+      - test
+
+  # FastAPI application - Production
+  web:
+    build: .
+    container_name: image-service-web
+    ports:
+      - "${WEB_PORT:-8000}:8000"
+    env_file:
+      - .env
+    volumes:
+      - ./data:/app/data
+    depends_on:
+      redis:
+        condition: service_healthy
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    profiles:
+      - production
+
+  # FastAPI application - Development (with hot reload)
+  web-dev:
+    build: .
+    container_name: image-service-web-dev
+    ports:
+      - "${WEB_PORT:-8000}:8000"
+    env_file:
+      - .env
+    volumes:
+      - ./data:/app/data
+      - .:/app
+    command: uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
+    depends_on:
+      redis:
+        condition: service_healthy
+    profiles:
+      - development
+
+  # Celery worker - Production
+  worker:
+    build: .
+    container_name: image-service-worker
+    command: celery -A app.tasks worker --loglevel=info --concurrency=${CELERY_WORKERS:-1}
+    env_file:
+      - .env
+    volumes:
+      - ./data:/app/data
+    depends_on:
+      redis:
+        condition: service_healthy
+      web:
+        condition: service_healthy
+    restart: unless-stopped
+    profiles:
+      - production
+
+  # Celery worker - Development
+  worker-dev:
+    build: .
+    container_name: image-service-worker-dev
+    command: celery -A app.tasks worker --loglevel=info --concurrency=${CELERY_WORKERS:-1}
+    env_file:
+      - .env
+    volumes:
+      - ./data:/app/data
+      - .:/app
+    depends_on:
+      redis:
+        condition: service_healthy
+    profiles:
+      - development
+
+  # Celery beat (for scheduled tasks)
+  beat:
+    build: .
+    container_name: image-service-beat
+    command: celery -A app.tasks beat --loglevel=info
+    env_file:
+      - .env
+    volumes:
+      - ./data:/app/data
+    depends_on:
+      redis:
+        condition: service_healthy
+    restart: unless-stopped
+    profiles:
+      - production
+
+  # Test service
+  test:
+    build: .
+    container_name: image-service-test
+    command: >
+      sh -c "
+        python -m pytest tests/ -v --tb=short
+      "
+    env_file:
+      - .env
+    volumes:
+      - ./data:/app/data
+    depends_on:
+      redis-test:
+        condition: service_healthy
+    profiles:
+      - test
+
+volumes:
+  redis_data: 
