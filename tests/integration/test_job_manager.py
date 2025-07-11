@@ -9,11 +9,12 @@ async def test_create_job() -> None:
     await init_db()
     async with AsyncSessionLocal() as session:
         job_manager = JobManager(session)
-        job = await job_manager.create_job("test_image.jpg")
+        job = await job_manager.create_job("test_image.jpg", ".jpg")
         
         assert job.id is not None
         assert job.status == JobStatus.QUEUED
         assert job.image_path.endswith(".jpg")
+        assert job.file_extension == ".jpg"
         assert job.generated_by == "vision-node-gpt"
 
 @pytest.mark.asyncio
@@ -22,7 +23,7 @@ async def test_get_job() -> None:
     await init_db()
     async with AsyncSessionLocal() as session:
         job_manager = JobManager(session)
-        created_job = await job_manager.create_job("test_image.jpg")
+        created_job = await job_manager.create_job("test_image.jpg", ".jpg")
         
         retrieved_job = await job_manager.get_job(created_job.id)
         assert retrieved_job is not None
@@ -34,7 +35,7 @@ async def test_update_job_status() -> None:
     await init_db()
     async with AsyncSessionLocal() as session:
         job_manager = JobManager(session)
-        job = await job_manager.create_job("test_image.jpg")
+        job = await job_manager.create_job("test_image.jpg", ".jpg")
         
         updated_job = await job_manager.update_job_status(job.id, JobStatus.PROCESSING)
         assert updated_job.status == JobStatus.PROCESSING
@@ -45,7 +46,7 @@ async def test_update_job_result() -> None:
     await init_db()
     async with AsyncSessionLocal() as session:
         job_manager = JobManager(session)
-        job = await job_manager.create_job("test_image.jpg")
+        job = await job_manager.create_job("test_image.jpg", ".jpg")
         
         updated_job = await job_manager.update_job_result(job.id, "A beautiful landscape")
         assert updated_job.status == JobStatus.DONE

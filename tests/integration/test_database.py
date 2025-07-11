@@ -17,6 +17,7 @@ async def test_job_model() -> None:
     async with AsyncSessionLocal() as session:
         job = Job(
             image_path="/test/path/image.jpg",
+            file_extension=".jpg",
             status=JobStatus.QUEUED
         )
         session.add(job)
@@ -25,4 +26,5 @@ async def test_job_model() -> None:
         
         assert job.id is not None
         assert job.status == JobStatus.QUEUED
-        assert job.image_path == "/test/path/image.jpg" 
+        assert job.image_path == "/test/path/image.jpg"
+        assert job.file_extension == ".jpg" 
