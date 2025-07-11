@@ -4,21 +4,6 @@ from app.services.job_manager import JobManager
 from app.enums import JobStatus
 from app.models import Job
 
-@pytest.fixture
-def mock_session():
-    """Create a mocked async database session."""
-    session = MagicMock()
-    session.add = MagicMock()
-    session.commit = AsyncMock()
-    session.refresh = AsyncMock()
-    session.execute = AsyncMock()
-    return session
-
-@pytest.fixture
-def job_manager(mock_session):
-    """Create a JobManager instance with mocked session."""
-    return JobManager(mock_session)
-
 @pytest.mark.asyncio
 async def test_create_job(job_manager, mock_session):
     """Test creating a new job with mocked database."""
