@@ -10,7 +10,9 @@ class Settings(BaseSettings):
     }
     
     # Port Configuration (for Docker Compose)
+    WEB_HOST: str = "0.0.0.0"
     WEB_PORT: int = 8000
+    REDIS_HOST: str = "localhost"
     REDIS_PORT: int = 6379
     REDIS_TEST_PORT: int = 6380
     
